@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="KM Logbook" />
+<title>KM Logbook</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <h1 id="screen-title">Track</h1>
+    <button id="btn-settings" class="icon-btn" title="Settings" aria-label="Settings">&#9881;</button>
+  </header>
+
+  <main>
+    <!-- ============ TRACK ============ -->
+    <section id="view-track" class="view is-active">
+      <div id="vehicle-warning" class="banner banner-warn" hidden>
+        Add your vehicle details in <button class="linkbtn" data-goto="settings">Settings</button> for a compliant logbook.
+      </div>
+
+      <div id="trip-idle" class="trip-panel">
+        <p class="odo-line">Last odometer: <strong id="idle-odo">&mdash;</strong></p>
+        <button id="btn-start" class="bigbtn bigbtn-go">Start trip</button>
+        <p class="hint">GPS distance is recorded while the app is open. Enter odometer readings at start/stop for an ATO&#8209;compliant record.</p>
+      </div>
+
+      <div id="trip-active" class="trip-panel" hidden>
+        <div class="live-grid">
+          <div class="live-cell"><span class="live-label">Elapsed</span><span id="live-elapsed" class="live-val">00:00:00</span></div>
+          <div class="live-cell"><span class="live-label">GPS distance</span><span id="live-distance" class="live-val">0.0 km</span></div>
+          <div class="live-cell"><span class="live-label">Speed</span><span id="live-speed" class="live-val">&mdash;</span></div>
+          <div class="live-cell"><span class="live-label">GPS fix</span><span id="live-accuracy" class="live-val">&mdash;</span></div>
+        </div>
+        <p id="gps-status" class="hint"></p>
+        <button id="btn-stop" class="bigbtn bigbtn-stop">Stop trip</button>
+      </div>
+    </section>
+
+    <!-- ============ TRIPS ============ -->
+    <section id="view-trips" class="view">
+      <div class="list-toolbar">
+        <span id="trips-count" class="muted"></span>
+      </div>
+      <div id="trips-list"></div>
+    </section>
+
+    <!-- ============ EXPORT ============ -->
+    <section id="view-export" class="view">
+      <div class="card">
+        <h2>Export spreadsheet (.xlsx)</h2>
+        <label class="field">
+          <span>Year basis</span>
+          <select id="ex-basis">
+            <option value="fy">Australian financial year (1 Jul &ndash; 30 Jun)</option>
+            <option value="cy">Calendar year (1 Jan &ndash; 31 Dec)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Period</span>
+          <select id="ex-period"></select>
+        </label>
+        <label class="field">
+          <span>Month</span>
+          <select id="ex-month"><option value="">Whole period</option></select>
+        </label>
+        <button id="btn-export" class="bigbtn">Export .xlsx</button>
+        <p class="hint">Workbook includes: Logbook (ATO logbook method), Cents&#8209;per&#8209;km summary, Vehicle &amp; period details, and a full trip audit sheet.</p>
+      </div>
+
+      <div class="card">
+        <h2>Backup / restore</h2>
+        <button id="btn-backup" class="btn">Download JSON backup</button>
+        <label class="btn btn-file">Restore from JSON<input id="file-restore" type="file" accept="application/json,.json" hidden /></label>
+      </div>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section id="view-settings" class="view">
+      <div class="card">
+        <h2>Vehicle</h2>
+        <label class="field"><span>Make</span><input id="set-make" type="text" autocomplete="off" placeholder="Toyota" /></label>
+        <label class="field"><span>Model</span><input id="set-model" type="text" autocomplete="off" placeholder="HiLux" /></label>
+        <label class="field"><span>Engine capacity</span><input id="set-engine" type="text" autocomplete="off" placeholder="2755 cc" /></label>
+        <label class="field"><span>Registration</span><input id="set-rego" type="text" autocomplete="off" placeholder="ABC123" /></label>
+      </div>
+
+      <div class="card">
+        <h2>Logbook period</h2>
+        <p class="hint">ATO requires a continuous logbook of at least 12 weeks, plus odometer readings at the start and end of the period and each income year.</p>
+        <label class="field"><span>Period start date</span><input id="set-lp-start" type="date" /></label>
+        <label class="field"><span>Odometer at period start</span><input id="set-lp-start-odo" type="number" inputmode="decimal" min="0" step="1" /></label>
+        <label class="field"><span>Period end date</span><input id="set-lp-end" type="date" /></label>
+        <label class="field"><span>Odometer at period end</span><input id="set-lp-end-odo" type="number" inputmode="decimal" min="0" step="1" /></label>
+      </div>
+
+      <div class="card">
+        <h2>Preferences</h2>
+        <label class="field"><span>Cents&#8209;per&#8209;km rate ($ / km)</span><input id="set-rate" type="number" inputmode="decimal" min="0" step="0.01" /></label>
+        <label class="field"><span>Max GPS error to accept (m)</span><input id="set-accuracy" type="number" inputmode="numeric" min="5" step="5" /></label>
+        <label class="field"><span>Current / last odometer</span><input id="set-last-odo" type="number" inputmode="decimal" min="0" step="1" /></label>
+        <label class="checkfield"><input id="set-require-purpose" type="checkbox" /><span>Require a purpose for work trips</span></label>
+        <label class="checkfield"><input id="set-keep-track" type="checkbox" /><span>Store GPS route points (larger backups)</span></label>
+      </div>
+
+      <div class="card card-danger">
+        <h2>Danger zone</h2>
+        <button id="btn-clear" class="btn btn-danger">Delete all trips &amp; settings</button>
+      </div>
+
+      <p class="version">KM Logbook &middot; offline PWA &middot; <span id="app-version"></span></p>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab is-active" data-view="track"><span class="tab-ico">&#9679;</span>Track</button>
+    <button class="tab" data-view="trips"><span class="tab-ico">&#9776;</span>Trips</button>
+    <button class="tab" data-view="export"><span class="tab-ico">&#8615;</span>Export</button>
+  </nav>
+</div>
+
+<!-- ============ START DIALOG ============ -->
+<dialog id="dlg-start">
+  <form method="dialog" class="dlg-body">
+    <h2>Start trip</h2>
+    <label class="field">
+      <span>Start odometer (optional)</span>
+      <input id="start-odo" type="number" inputmode="decimal" min="0" step="1" />
+    </label>
+    <p class="hint">Leave blank to record GPS distance only. You can still add odometer readings when you stop.</p>
+    <menu class="dlg-actions">
+      <button value="cancel" class="btn">Cancel</button>
+      <button value="go" id="start-confirm" class="btn btn-primary">Start</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- ============ STOP DIALOG ============ -->
+<dialog id="dlg-stop">
+  <form method="dialog" class="dlg-body">
+    <h2>Stop trip</h2>
+    <div class="seg" role="group" aria-label="Trip type">
+      <button type="button" class="seg-btn" data-class="work">Work</button>
+      <button type="button" class="seg-btn" data-class="personal">Personal</button>
+    </div>
+    <label class="field">
+      <span>Purpose of journey <em id="purpose-req" hidden>(required for work)</em></span>
+      <input id="stop-purpose" type="text" autocomplete="off" placeholder="e.g. Client site visit &ndash; Parramatta" />
+    </label>
+    <div class="two-col">
+      <label class="field"><span>Start odometer</span><input id="stop-start-odo" type="number" inputmode="decimal" min="0" step="1" /></label>
+      <label class="field"><span>End odometer</span><input id="stop-end-odo" type="number" inputmode="decimal" min="0" step="1" /></label>
+    </div>
+    <p class="hint" id="stop-gps-line"></p>
+    <label class="field"><span>Notes (optional)</span><input id="stop-notes" type="text" autocomplete="off" /></label>
+    <p class="err" id="stop-err" hidden></p>
+    <menu class="dlg-actions">
+      <button value="cancel" class="btn">Cancel</button>
+      <button value="discard" id="stop-discard" class="btn btn-danger-soft">Discard trip</button>
+      <button value="save" id="stop-save" class="btn btn-primary">Save</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- ============ EDIT DIALOG ============ -->
+<dialog id="dlg-edit">
+  <form method="dialog" class="dlg-body">
+    <h2>Edit trip</h2>
+    <div class="two-col">
+      <label class="field"><span>Start date</span><input id="ed-start-date" type="date" /></label>
+      <label class="field"><span>Start time</span><input id="ed-start-time" type="time" /></label>
+    </div>
+    <div class="two-col">
+      <label class="field"><span>End date</span><input id="ed-end-date" type="date" /></label>
+      <label class="field"><span>End time</span><input id="ed-end-time" type="time" /></label>
+    </div>
+    <div class="seg" role="group" aria-label="Trip type">
+      <button type="button" class="seg-btn" data-class="work">Work</button>
+      <button type="button" class="seg-btn" data-class="personal">Personal</button>
+    </div>
+    <label class="field"><span>Purpose of journey</span><input id="ed-purpose" type="text" autocomplete="off" /></label>
+    <div class="two-col">
+      <label class="field"><span>Start odometer</span><input id="ed-start-odo" type="number" inputmode="decimal" min="0" step="1" /></label>
+      <label class="field"><span>End odometer</span><input id="ed-end-odo" type="number" inputmode="decimal" min="0" step="1" /></label>
+    </div>
+    <label class="field"><span>Distance override (km)</span><input id="ed-distance" type="number" inputmode="decimal" min="0" step="0.1" /></label>
+    <p class="hint">If both odometer readings are set, distance is taken from them. Otherwise this value (or GPS distance) is used.</p>
+    <label class="field"><span>Notes</span><input id="ed-notes" type="text" autocomplete="off" /></label>
+    <p class="err" id="ed-err" hidden></p>
+    <menu class="dlg-actions">
+      <button value="cancel" class="btn">Cancel</button>
+      <button value="delete" id="ed-delete" class="btn btn-danger-soft">Delete</button>
+      <button value="save" id="ed-save" class="btn btn-primary">Save</button>
+    </menu>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="js/store.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/export.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
